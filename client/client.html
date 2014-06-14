@@ -1,409 +1,370 @@
 <html>
+
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta charset="utf-8">
-  <link href="css/bootstrap.css" rel="stylesheet">
-  <link href="css/signin.css" rel="stylesheet">
-  <script src="js/binary.js"></script>
-  <script src="js/socket.io.js"></script>
-  <script type="text/javascript" src="js/jquery-2.0.3.js"></script>
-  <script type="text/javascript" src="js/globalize.js"></script>
-  <script type="text/javascript" src="js/dx.chartjs.js"></script>
-  <script src="js/chart.js" type="text/javascript" charset="utf-8"></script>
-  <script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/signin.css" rel="stylesheet">
+    <script src="js/binary.js"></script>
+    <script src="js/socket.io.js"></script>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script>
+    var nom;
+    var prenom;
+    var identifiant;
+    var adresse;
+    var socket;
 
+    var continuerChrono = true;
 
+    var mille = 0 // initialise les dixtièmes
+    var secon = 0 //initialise les secondes
+    var secon = 0 //initialise les secondes
+    var minu = 0
 
+    var estTrouvé;
 
+    var iosocket = false;
+    var binaryjs = false;
 
-  var nom;
-  var prenom;
-  var identifiant;
-  var adresse;
-  var socket;
+    function reponse() {
 
-  var continuerChrono = true;
-
-  var mille=0 // initialise les dixtièmes
-var secon=0 //initialise les secondes
-var minu=0
-var temps ;
-
-var estTrouvé;
-
-var iosocket = false;
-var binaryjs = false;
-
-function chart(temps){
-  $("#myChart").dxCircularGauge({
-      scale: {
-        startValue: 0,
-        endValue: temps
-      },
-      value: 0,
-      geometry: {startAngle: 180, endAngle: 180}
-    });
-}
-function reponse(){
-
-  socket.emit("proposition");
-}
-function loadconnexion() {
-  socket = io.connect('http://'+adresse+':8080');
-
-
-  socket.on('connect', function () {
-    iosocket = true;
-  });
-
-  socket.on('begingame', function(){
-    $( "#play" ).css( "display", "none" );
-    $( "#lecture" ).css( "display", "block" );
-    document.getElementById("bouton").disabled = true;
-  });
-
-  socket.on('addId', function (id) {
-    identifiant = id;
-  });
-
-  socket.on('cleanplayers', function () {
-    $('#adv').empty();
-    $( "#adv" ).append( "<a class=\"list-group-item active\">Participants: </a>");
-  });
-
-  socket.on('newplayer', function(nom, prenom,id, score){
-    if(id == identifiant){
-      $( "#adv" ).append( "<a class=\"list-group-item\" style=\"color:red;\" id=\"" + id +"\">"+ prenom + " " + nom +" <span class=\"badge\" id=\"span_" + id + "\">"+ score + "</span> </a>");
+        socket.emit("proposition");
     }
-    else{
-      $( "#adv" ).append( "<a class=\"list-group-item\" id=\"" + id +"\">"+ prenom + " " + nom +" <span class=\"badge\" id=\"span_" + id + "\">"+ score + "</span> </a>");
-    }
-  });
+
+    /*==================================================================Jeu=============================================================*/
+
+    function loadconnexion() {
+        socket = io.connect('http://' + adresse + ':8080');
 
 
-
-  socket.on('reponse', function(nom, prenom, id){
-    $( "#"+id ).css( "background-color", "#ffff00" );
-
-  });
-
-  socket.on('finreponse', function(id){
-    $( "#"+id ).css( "background-color", "white" );
-  });
-
-  socket.on('addPoint', function(id){
-    document.getElementById("bouton").disabled = true;
-    estTrouvé = true;
-    continuerChrono = false;
-    if(id == identifiant){
-      $( "#gagne" ).css( "display", "block" );
-      $( "#chrono" ).css( "display", "none" );
-    }
-    else {
-      $( "#perdu" ).css( "display", "block" );
-      $( "#chrono" ).css( "display", "none" );
-    }
-  });
-
-  socket.on('historique', function(artiste, musique){
-    $( "#his" ).append( "<a class=\"list-group-item\" \">"+ artiste + " - " + musique +" </a>");
-  });
-
-
-
-
-  socket.on('stop', function(){
-    if(!audioElement.paused){
-      continuerChrono = false;
-      document.getElementById("bouton").disabled = true;
-      audioElement.pause();
-    }
-  });
-
-  socket.on('play', function(){
-    if(audioElement.paused){
-      if(audioElement.ended){
-       mille=0 
-       secon=0 
-       minu = 0;
-       temps = audioElement.duration-1;
-       $( "#chrono" ).css( "display", "block" );
-       //donut(temps,0);
-     }
-     audioElement.play();
-
-     if(!estTrouvé)
-       document.getElementById("bouton").disabled = false;
-
-     continuerChrono = true;
-     chrono();
-   }
- });
-
-
-    // Connect to Binary.js server
-    var audioElement = document.createElement('audio');
-    setTimeout(function() {
-      var client = new BinaryClient('ws://'+adresse+':9000');
-    // Received new stream from server!
-    client.on('close', function(stream, meta){
-     // location.reload();
-   });
-
-    client.on('open', function(){
-      binaryjs = true;
-      if(iosocket){
-        $( "#loading" ).css( "display", "none" );
-        $( "#play" ).css( "display", "block" );
-        $( "#sidebar" ).css( "display", "block" );
-        $( "#historique" ).css( "display", "block" );
-        socket.emit("nouveau", nom, prenom);
-      }
-    });
-    client.on('stream', function(stream, meta){
-      var parts = [];
-      stream.on('data', function(data){
-       parts.push(data);
-     });
-      stream.on('end', function(){
-        $( "#player" ).css( "display", "none" );
-        $( "#perdu" ).css( "display", "none" );
-        $( "#gagne" ).css( "display", "none" );
-        $( "#lecture" ).css( "display", "block" );
-        $( "#chrono" ).css( "display", "block" );
-        audioElement.src = (window.URL || window.webkitURL).createObjectURL(new Blob(parts));
-        
-        mille=0 
-        secon=0 
-        minu = 0;
-        estTrouvé = false;
-        setTimeout(function(){
-          temps = audioElement.duration-1;
-          //donut(temps,0);
-          chart(temps);
-          continuerChrono = true;
-          chrono();
-          audioElement.play();
-          document.getElementById("bouton").disabled = false;
-        },100);
-
-        audioElement.addEventListener("ended",function() {
-          continuerChrono = false;
-          document.getElementById("bouton").disabled = true;
-          socket.emit("finlecture");
+        socket.on('connect', function() {
+            iosocket = true;
         });
-        //stream.destroy();
-/*setTimeout(function(){
-        socket.emit('finlecture');
-      }, 10000);*/
 
-});
-});
+        socket.on('AffichageEcranDuJeu', function() {
+            $("#play").css("display", "none");
+            $("#lecture").css("display", "block");
+            $("#historique").css("display", "block");
+            $("#chrono").css("display", "block");
+            document.getElementById("bouton").disabled = true;
+        });
+
+        socket.on('addId', function(id) {
+            identifiant = id;
+        });
+
+        socket.on('cleanplayers', function() {
+            $('#adv').empty();
+            $("#adv").append("<a class=\"list-group-item active\">Participants: </a>");
+        });
+
+        socket.on('newplayer', function(nom, prenom, id, score) {
+            if (id == identifiant) {
+                $("#adv").append("<a class=\"list-group-item\" style=\"color:red;\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span> </a>");
+            } else {
+                $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span> </a>");
+            }
+        });
 
 
-},500);
 
-setTimeout(function() {
-  if(!iosocket || !binaryjs){
-   $( "#accueil" ).css( "display", "block" );
-   $( "#mauvaisIp" ).css( "display", "inline" );
-   $( "#loading" ).css( "display", "none" );
- }
-},10000);
+        socket.on('reponse', function(nom, prenom, id) {
+            $("#" + id).css("background-color", "#ffff00");
 
-}
+        });
+
+        socket.on('finreponse', function(id) {
+            $("#" + id).css("background-color", "white");
+        });
+
+        socket.on('addPoint', function(id) {
+            document.getElementById("bouton").disabled = true;
+            estTrouvé = true;
+            continuerChrono = false;
+            if (id == identifiant) {
+                $("#gagne").css("display", "block");
+                $("#chrono").css("display", "none");
+            } else {
+                $("#perdu").css("display", "block");
+                $("#chrono").css("display", "none");
+            }
+        });
+
+        socket.on('historique', function(artiste, musique) {
+            $("#his").append("<a class=\"list-group-item\" \">" + artiste + " - " + musique + " </a>");
+        });
 
 
-$(document).ready(function() {
-  var form = $('#connexion'); 
-  var form2 = $('#adresseipForm')
-  form.on('submit', function(e) {
-    e.preventDefault(); // prevent default form submit
 
-    $.ajax({
-      dataType: 'html', 
-      success: function(data) {
-        prenom = $("#prenom").val();
-        nom = $("#nom").val();
-        
-        $( "#connexion" ).css( "display", "none" );
-        $( "#accueil" ).css( "display", "block" );
-        $( "#nom-prenom" ).text(prenom + " " + nom + " ");
-      }
+
+        socket.on('stop', function() {
+            if (!audioElement.paused) {
+                continuerChrono = false;
+                document.getElementById("bouton").disabled = true;
+                audioElement.pause();
+            }
+        });
+
+        socket.on('play', function() {
+            if (audioElement.paused) {
+                if (audioElement.ended) {
+                    mille = 0;
+                    secon = 0;
+                    secon2 = 0;
+                    minu = 0;
+                    $("#chrono").css("display", "block");
+                }
+                audioElement.play();
+
+                if (!estTrouvé)
+                    document.getElementById("bouton").disabled = false;
+
+                continuerChrono = true;
+                chrono();
+            }
+        });
+
+
+        // Connect to Binary.js server
+        var audioElement = document.createElement('audio');
+        setTimeout(function() {
+            var client = new BinaryClient('ws://' + adresse + ':9000');
+            // Received new stream from server!
+            client.on('close', function(stream, meta) {
+                // location.reload();
+            });
+
+            client.on('open', function() {
+                binaryjs = true;
+                if (iosocket) {
+                    $("#loading").css("display", "none");
+                    $("#play").css("display", "block");
+                    $("#sidebar").css("display", "block");
+                    socket.emit("nouveau", nom, prenom);
+                }
+            });
+            client.on('stream', function(stream, meta) {
+                var parts = [];
+                stream.on('data', function(data) {
+                    parts.push(data);
+                });
+
+
+                stream.on('end', function() {
+                    $("#player").css("display", "none");
+                    $("#perdu").css("display", "none");
+                    $("#gagne").css("display", "none");
+                    $("#lecture").css("display", "block");
+                    $("#chrono").css("display", "block");
+                    audioElement.src = (window.URL || window.webkitURL).createObjectURL(new Blob(parts));
+
+                    mille = 0;
+                    secon = 0;
+                    minu = 0;
+                    secon2 = 0;
+                    estTrouvé = false;
+                    continuerChrono = false;
+                    setTimeout(function() {
+                        continuerChrono = true;
+                        chrono();
+                        audioElement.play();
+                        document.getElementById("bouton").disabled = false;
+                    }, 300);
+
+                    audioElement.addEventListener("ended", function() {
+                        continuerChrono = false;
+                        document.getElementById("bouton").disabled = true;
+
+                        /*---Mode dossier---*/
+                        socket.emit("finlecture");
+                    });
+
+                });
+            });
+
+
+        }, 500);
+
+        setTimeout(function() {
+            if (!iosocket || !binaryjs) {
+                $("#accueil").css("display", "block");
+                $("#mauvaisIp").css("display", "inline");
+                $("#loading").css("display", "none");
+            }
+        }, 10000);
+
+    }
+
+    /*==================================================================Formulaires=============================================================*/
+    $(document).ready(function() {
+        var connexion = $('#connexion');
+        var adresseipForm = $('#adresseipForm')
+        connexion.on('submit', function(e) {
+            e.preventDefault(); // prevent default form submit
+
+            $.ajax({
+                dataType: 'html',
+                success: function(data) {
+                    prenom = $("#prenom").val();
+                    nom = $("#nom").val();
+
+                    $("#connexion").css("display", "none");
+                    $("#accueil").css("display", "block");
+                    $("#nom-prenom").text(prenom + " " + nom + " ");
+                }
+            });
+        });
+
+        adresseipForm.on('submit', function(e) {
+            e.preventDefault(); // prevent default form submit
+
+            $.ajax({
+                dataType: 'html',
+                success: function(data) {
+                    adresse = $("#adresseip").val();
+                    $("#accueil").css("display", "none");
+                    $("#loading").css("display", "block");
+                    loadconnexion();
+
+                }
+            });
+        });
     });
-  });
 
-  form2.on('submit', function(e) {
-    e.preventDefault(); // prevent default form submit
+    /*==================================================================Chrono=============================================================*/
 
-    $.ajax({
-      dataType: 'html', 
-      success: function(data) {
-        adresse = $("#adresseip").val();
-        $( "#accueil" ).css( "display", "none" );
-        $( "#loading" ).css( "display", "block" );
-        loadconnexion();
+    function chrono() {
+        mille++; //incrémentation des dixièmes de 1
+        if (mille > 9) {
+            mille = 0;
+            secon++;
+        }
+        if (secon > 9) {
+            secon = 0;
+            secon2++;
+        }
+        if (((secon2 * 10) + secon) > 59) {
+            secon = 0;
+            secon2 = 0;
+            minu++;
+        }
+        document.getElementById("milles").innerHTML = mille;
+        document.getElementById("secondes").innerHTML = secon;
+        document.getElementById("secondes2").innerHTML = secon2;
+        document.getElementById("minutes").innerHTML = minu;
 
-      }
-    });
-  });
-});
-
-
-
-
-/*function donut(tempsr, tempse) {
-  var canvas = document.getElementById('myChart');
-  canvas.width = 200;
-  canvas.height = 200;
-  var optionsNoAnimation = {animation : false};
-  var data = [
-  {
-    value : tempse,
-    color : "#E2EAE9"
-  },
-  {
-    value : tempsr,
-    color : "#D4CCC5"
-  }
-
-  ]
-
-  var ctx = document.getElementById("myChart").getContext("2d");
-  new Chart(ctx).Doughnut(data,optionsNoAnimation);
-}*/
-
-   /* for(var i=0; i<100; i++){
-      setTimeout(function() {
-         $("#dxGaugeContainer").dxCircularGauge({ value: i});
-      }, 1000);
-    }*/
-
-
-function chrono(){
-mille++; //incrémentation des dixièmes de 1
-if (mille>9){mille=0;secon++; temps--; addchrono((minu*60)+secon);} 
-if (secon>59){secon=0;minu++}
-
-document.getElementById("milles").innerHTML= mille;
-document.getElementById("secondes").innerHTML= secon;
-document.getElementById("minutes").innerHTML= minu;
-if(continuerChrono){
-  setTimeout('chrono()',100);
-
-}
-
-}
-
-function addchrono(i){
-  $("#myChart").dxCircularGauge({ value:i});
-}
-
-
-</script>
+        if (continuerChrono) {
+            setTimeout('chrono()', 100);
+        }
+    }
+    </script>
 </head>
+
 <body>
+    <div class="container">
+        <div class="row">
 
-  <div class="container" >
-   <div class="row">
+            <div id="play" style="display: none;">
+                <div class="col-xs-10 col-sm-8">
+                    <div class="jumbotron" style="margin-top: 100px;  background-color: white">
+                        <h1>C'est presque bon !</h1>
+                        <p>Attendez que le maitre du test lance le jeu.</p>
+                    </div>
+                </div>
+            </div>
 
+            <div class="col-xs-10 col-sm-8 sidebar-offcanvas" id="chrono" role="navigation" style="display: none;">
+                <div style="text-align:center; width:100%; ">
+                    <div class="chrono" id="minutes">0</div>
+                    <span class="chrono_separator">:</span>
+                    <div class="chrono" id="secondes2">0</div>
+                    <div class="chrono" id="secondes">0</div>
+                    <span class="chrono_separator">:</span>
+                    <div class="chrono" id="milles">0</div>
+                </div>
+            </div>
 
+            <div id="perdu" style="display: none;">
+                <div class="col-xs-10 col-sm-8">
+                    <div class="jumbotron" style="background-color: white">
+                        <h1>Perdu</h1>
+                    </div>
+                </div>
+            </div>
 
+            <div id="gagne" style="display: none;">
+                <div class="col-xs-10 col-sm-8">
+                    <div class="jumbotron" style="background-color: white">
+                        <h1>Bonne réponse !</h1>
+                    </div>
+                </div>
+            </div>
 
-
-    <div id ="play" style="display: none;">
-      <div class="col-xs-10 col-sm-8">
-        <div class="jumbotron"  style="margin-top: 100px;  background-color: white">
-          <h1>C'est presque bon !</h1>
-          <p> Attendez que le maitre du test lance le jeu. </p>
+            <div class="col-xs-8 col-sm-4 sidebar-offcanvas" id="sidebar" role="navigation" style="display: none;">
+                <div class="list-group" id="adv">
+                    <a class="list-group-item active">Adversaires:</a>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="col-xs-10 col-sm-8 sidebar-offcanvas" id="chrono" role="navigation" style="display: none;">
-      <div style="text-align:center; width:100%; font-size:20px">
-        <div id="myChart" style="width:300; height:300;"></div><br/>
-        <span id="minutes">0</span> : <span id="secondes">0</span> : <span id="milles">0</span>
-      </div>
-    </div>
+        <div class="row">
+            <div id="lecture" style="display: none; margin-top: 50px;">
+                <div class="col-xs-10 col-sm-8">
+                    <div style="text-align:center; width:100%;">
+                        <button type="submit" class="btn btn-success" id="bouton" style="width: 350px; height: 200px;" onclick="reponse()">
+                            <span style="font-size: 60px;">J'ai trouvé !</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-    <div id ="perdu" style="display: none;">
-      <div class="col-xs-10 col-sm-8">
-        <div class="jumbotron"  style="background-color: white">
-          <h1>Perdu</h1>
+            <div class="col-xs-6 col-sm-4 sidebar-offcanvas" id="historique" role="navigation" style="margin-top: 20px; display: none;">
+                <div class="list-group" id="his">
+                    <a class="list-group-item active">Historique:</a>
+                </div>
+            </div>
         </div>
-      </div>
+
     </div>
 
-    <div id ="gagne" style="display: none;">
-      <div class="col-xs-10 col-sm-8">
-        <div class="jumbotron"  style="background-color: white">
-          <h1>Bonne réponse !</h1>
-        </div>
-      </div>
+    <div class="jumbotron" id="loading" style="margin-top: 100px; display: none; background-color: white">
+        <h1>
+            Connexion
+            <img src="images/ajax-loader.gif" alt="some_text">
+        </h1>
     </div>
 
+    <div class="jumbotron" style="margin-top: 100px; background-color: white; display: none;" id="accueil">
+        <h1>Blind Test</h1>
+        <br/>
+        <p>
+            Bienvenu
+            <span id="nom-prenom"></span>
+            dans ce nouveau jeu. Pour commencer, il suffit de renseigner l'adresse ip du serveur !!!
+        </p>
 
-
-    <div class="col-xs-8 col-sm-4 sidebar-offcanvas" id="sidebar" role="navigation" style="display: none;">
-      <div class="list-group" id="adv">
-        <a class="list-group-item active">Adversaires: </a>
-      </div>
+        <form class="navbar-form navbar-left" id="adresseipForm" role="form">
+            <div class="form-group">
+                <input type="text" class="form-control" id="adresseip" placeholder="Adresse ip" pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$" autocomplete="on" required autofocus>
+            </div>
+            <button type="submit" class="btn btn-success">Sign in</button>
+            <span id="mauvaisIp" style="color:red; font-weight: bold; margin-left: 50px; display: none;">L'adresse n'est pas valide !</span>
+        </form>
     </div>
-  </div>
-
-
-  <div class="row">
-    <div id ="lecture" style="display: none; margin-top: 50px;">
-      <div class="col-xs-10 col-sm-8" >
-        <div style="text-align:center; width:100%;">
-          <button type="submit" class="btn btn-success" id="bouton" style="width: 350px; height: 200px;" onclick="reponse()" ><span style="font-size: 60px;">J'ai trouvé !</span></button>
-        </div>
-      </div>
     </div>
 
-    <div class="col-xs-6 col-sm-4 sidebar-offcanvas" id="historique" role="navigation" style="margin-top: 20px; display: none;">
-      <div class="list-group" id="his">
-        <a class="list-group-item active">Historique: </a>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-
-
-
-
-
-<div class="jumbotron" id ="loading" style="margin-top: 100px; display: none; background-color: white">
-  <h1>Connexion <img src="images/ajax-loader.gif" alt="some_text"></h1>
-</div>
-
-
-<div class="jumbotron" style="margin-top: 100px; background-color: white; display: none;" id="accueil" >
-  <h1>Blind Test</h1><br/>
-  <p>Bienvenu <span id="nom-prenom"></span>dans ce nouveau jeu. Pour commencer, il suffit de renseigner l'adresse ip du serveur !!! </p>
-
-  <form class="navbar-form navbar-left" id="adresseipForm" role="form" >
-    <div class="form-group">
-      <input type="text" class="form-control" id="adresseip" placeholder="Adresse ip" pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$" autocomplete="on" required autofocus></div>
-      <button type="submit" class="btn btn-success">Sign in</button>
-      <span id="mauvaisIp" style="color:red; font-weight: bold; margin-left: 50px; display: none;">L'adresse n'est pas valide !</span>
+    <form class="form-signin" id="connexion" role="form">
+        <h2 class="form-signin-heading">Please sign in</h2>
+        <input type="text" class="form-control" id="nom" placeholder="Nom" autocomplete="on" required autofocus>
+        <input type="text" class="form-control" id="prenom" placeholder="Prenom" autocomplete="on" required>
+        <button class="btn btn-lg btn-primary btn-block">Sign in</button>
     </form>
-  </div>
-</div>
 
-<form class="form-signin" id="connexion" role="form" >
-  <h2 class="form-signin-heading">Please sign in</h2>
-  <input type="text" class="form-control" id="nom" placeholder="Nom" autocomplete="on" required autofocus>
-  <input type="text" class="form-control" id="prenom" placeholder="Prenom" autocomplete="on" required>
-  <button class="btn btn-lg btn-primary btn-block" >Sign in</button>
-</form>
+    </div>
 
-</div>
-
-<script src="js/bootstrap.js"></script>
+    <script src="js/bootstrap.js"></script>
 </body>
+
 </html>

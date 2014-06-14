@@ -21,6 +21,7 @@
  <script src="scripts/binary.js"></script>
  <script src="scripts/bootstrap.js"></script>
 
+
  <script>
 
 
@@ -134,7 +135,7 @@ function start(){
   $( "#controle" ).css( "display", "block" );
   $( "#controle2" ).css( "display", "block" );
   $( "#historique" ).css( "display", "block" );
-  socket.emit('begingame');
+  socket.emit('AffichageEcranDuJeu');
 }
 
 
@@ -275,7 +276,7 @@ socket.on('addMusique', function(artiste, titre){
               <button type="button" class="btn btn-primary btn-lg" onclick="start()"><i class="glyphicon glyphicon-file" style="font-size: 6em"></i><br/>Drop</button>
             </div>
             <div class="col-xs-9 col-sm-6">
-              <button type="button" class="btn btn-info btn-lg" onclick="dossier()"><i class="glyphicon glyphicon-folder-open" style="font-size: 6em"></i><br/>Dossier</button>
+              <button type="button" class="btn btn-info btn-lg" onclick="dossier()"><i class="glyphicon glyphicon-folder-open" style="font-size: 6em"></i><br/>Dossier (beta)</button>
             </div>
           </div>
         </div>
