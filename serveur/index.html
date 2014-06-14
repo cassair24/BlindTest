@@ -1,323 +1,375 @@
 <html>
+
 <head>
- <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
- <meta charset="utf-8">
- <meta http-equiv="X-UA-Compatible" content="IE=edge">
- <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
- <link href="css/bootstrap-theme.css" rel="stylesheet">
- <link href="css/jquery-impromptu.css" rel="stylesheet">
- <link rel="stylesheet" type="text/css" href="css/bootstrap.css"/>
+    <link href="css/bootstrap-theme.css" rel="stylesheet">
+    <link href="css/jquery-impromptu.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css" />
 
- <style type="text/css"> 
-
- </style>
-
-
- <link href="css/signin.css" rel="stylesheet">
- <script src="scripts/jquery.min.js"></script>
- <script src="scripts/jquery-impromptu.js"></script>
- <script src="/socket.io/socket.io.js"></script>
- <script src="scripts/binary.js"></script>
- <script src="scripts/bootstrap.js"></script>
+    <style type="text/css">
+    </style>
 
 
- <script>
+    <link href="css/signin.css" rel="stylesheet">
+    <script src="scripts/jquery.min.js"></script>
+    <script src="scripts/jquery-impromptu.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="scripts/binary.js"></script>
+    <script src="scripts/bootstrap.js"></script>
+    <script>
+    var client = new BinaryClient('ws://localhost:9000');
+    var socket = io.connect('http://localhost:8080');
+    var prompt;
+
+    var MODE;
+
+    function play() {
+
+        socket.emit('play');
+    }
 
 
- var client = new BinaryClient('ws://localhost:9000');
- var socket = io.connect('http://localhost:8080');
+    client.on('open', function() {
+        var box = $('#box');
+        box.on('dragenter', doNothing);
+        box.on('dragover', doNothing);
+        box.text('Drag files here');
+        box.on('drop', function(e) {
+            e.originalEvent.preventDefault();
+            var file = e.originalEvent.dataTransfer.files[0];
+            socket.emit('stop');
+            var stream = client.send(file, {
+                name: file.name,
+                size: file.size
+            });
+        });
+    });
 
- var prompt;
+    client.on('close', function() {
+        location.reload();
 
- var MODE;
- function play() {
-
-  socket.emit('play');
-}
-
-
-client.on('open', function(){
-  var box = $('#box');
-  box.on('dragenter', doNothing);
-  box.on('dragover', doNothing);
-  box.text('Drag files here');
-  box.on('drop', function(e){
-    e.originalEvent.preventDefault();
-    var file = e.originalEvent.dataTransfer.files[0];
-    socket.emit('stop');
-    var stream = client.send(file, {name: file.name, size: file.size});       
-  });
-});
-
-client.on('close', function(){
- location.reload();
-
-});
+    });
 
     // Deal with DOM quirks
-    function doNothing (e){
-      e.preventDefault();
-      e.stopPropagation();
+
+    function doNothing(e) {
+        e.preventDefault();
+        e.stopPropagation();
     }
     socket.emit('add');
-    socket.on('adresse', function(adresse){
-     $( "#adresseip" ).append( adresse);
-   });
-
-    socket.on('newplayer', function(nom, prenom,id, score){
-      $( "#adv" ).append( "<a class=\"list-group-item\" id=\"" + id +"\">"+ prenom + " " + nom +" <span class=\"badge\" id=\"span_" + id + "\">"+ score + "</span> </a>");
+    socket.on('adresse', function(adresse) {
+        $("#adresseip").append(adresse);
     });
 
-    socket.on('deleteplayer', function(id){
-      alert(id);
-      $( "#"+id ).remove();
+    socket.on('newplayer', function(nom, prenom, id, score) {
+        $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span> </a>");
     });
 
-    socket.on('reponse', function(nom, prenom, id){
-      if(!prompt){
-        $( "#"+id ).css( "background-color", "#ffff00" );
+    socket.on('deleteplayer', function(id) {
+        alert(id);
+        $("#" + id).remove();
+    });
+
+    socket.on('reponse', function(nom, prenom, id) {
+        if (!prompt) {
+            $("#" + id).css("background-color", "#ffff00");
 
 
-       //window.setTimeout(function() { $('#dialog').dialog('close'); }, 5000);
-       var myPrompt = $.prompt("Est-ce que "+ prenom + " "+ nom+ " a trouvé la bonne réponse ?", {
-        buttons: { "Oui": true, "Non": false },
-        submit: function(e,v,m,f){
-          if(v){
-            socket.emit('addPoint', id);
-            if(MODE == 'drop')
-              socket.emit('play'); 
-            socket.emit('finreponse', id);   
-            $( "#"+id ).css( "background-color", "white" );
-          }else {
-            socket.emit('play');
-            socket.emit('finreponse', id);   
-            $( "#"+id ).css( "background-color", "white" );
-            clearTimeout(chrono);
-          }
+            //window.setTimeout(function() { $('#dialog').dialog('close'); }, 5000);
+            var myPrompt = $.prompt("Est-ce que " + prenom + " " + nom + " a trouvé la bonne réponse ?", {
+                buttons: {
+                    "Oui": true,
+                    "Non": false
+                },
+                submit: function(e, v, m, f) {
+                    if (v) {
+                        socket.emit('addPoint', id);
+                        if (MODE == 'drop')
+                            socket.emit('play');
+                        socket.emit('finreponse', id);
+                        $("#" + id).css("background-color", "white");
+                    } else {
+                        socket.emit('play');
+                        socket.emit('finreponse', id);
+                        $("#" + id).css("background-color", "white");
+                        clearTimeout(chrono);
+                    }
+                }
+            });
+            myPrompt.on('impromptu:loaded', function(e) {
+                prompt = true;
+            });
+            myPrompt.on('impromptu:close ', function(e) {
+                prompt = false;
+            });
+            chrono = window.setTimeout(function() {
+                jQuery.prompt.close();
+                socket.emit('play');
+                socket.emit('finreponse', id);
+                $("#" + id).css("background-color", "white");
+            }, 5000);
         }
-      });
-       myPrompt.on('impromptu:loaded', function(e){prompt = true;});
-       myPrompt.on('impromptu:close ', function(e){prompt = false;});
-       chrono = window.setTimeout(function() { jQuery.prompt.close();
-          socket.emit('play');      
-        socket.emit('finreponse', id);        
-        $( "#"+id ).css( "background-color", "white" );}, 5000);
-     }
-   });
+    });
 
-socket.on('historique', function(artiste, musique){
-  $( "#his" ).append( "<a class=\"list-group-item\" \">"+ artiste + " - " + musique +" </a>");
-});
+    socket.on('historique', function(artiste, musique) {
+        $("#his").append("<a class=\"list-group-item\" \">" + artiste + " - " + musique + " </a>");
+    });
 
 
-socket.on('infosMP3', function(artiste, titre, album){
-  document.getElementById("artiste").innerHTML= "";
-  document.getElementById("titre").innerHTML= "";
-  document.getElementById("album").innerHTML= "";
+    socket.on('infosMP3', function(artiste, titre, album) {
+        document.getElementById("artiste").innerHTML = "";
+        document.getElementById("titre").innerHTML = "";
+        document.getElementById("album").innerHTML = "";
 
-  $( "#artiste" ).append( artiste);
-  $( "#titre" ).append( titre);
-  $( "#album" ).append( album);
-});
+        $("#artiste").append(artiste);
+        $("#titre").append(titre);
+        $("#album").append(album);
+    });
 
-socket.on('cleanplayers', function () {
-  $('#adv').empty();
-  $( "#adv" ).append( "<a class=\"list-group-item active\">Participants: </a>");
-});
+    socket.on('cleanplayers', function() {
+        $('#adv').empty();
+        $("#adv").append("<a class=\"list-group-item active\">Participants: </a>");
+    });
 
-function start(){
-  MODE = 'drop';
-  socket.emit('mode', MODE); 
-  $( "#accueil" ).css( "display", "none" );
-  $( "#game" ).css( "display", "block" );
-  $( "#musique" ).css( "display", "block" );
-  $( "#controle" ).css( "display", "block" );
-  $( "#controle2" ).css( "display", "block" );
-  $( "#historique" ).css( "display", "block" );
-  socket.emit('AffichageEcranDuJeu');
-}
-
-
-
-function play(){
-  socket.emit('play');
-}
-
-function pause(){
-  socket.emit('stop');
-}
-
-$(function()
-{
-  $('input[type=file]').on('change',function ()
-  { 
-    for (var i=0; i < this.files.length; i++) {
-      alert((window.URL || window.webkitURL).createObjectURL(this.files[i]));
-      /*var stream = client.send(this.files[i], {name: this.files[i].name, size: this.files[i].size});*/
+    function start() {
+        MODE = 'drop';
+        socket.emit('mode', MODE);
+        $("#accueil").css("display", "none");
+        $("#game").css("display", "block");
+        $("#musique").css("display", "block");
+        $("#controle").css("display", "block");
+        $("#controle2").css("display", "block");
+        $("#historique").css("display", "block");
+        socket.emit('AffichageEcranDuJeu');
     }
-  });
-});
 
 
-/*==================================================================DOSSIER=============================================================*/
-function dossier(){
- /* $( "#begin" ).css( "display", "none" );
+
+    function play() {
+        socket.emit('play');
+    }
+
+    function pause() {
+        socket.emit('stop');
+    }
+
+    $(function() {
+        $('input[type=file]').on('change', function() {
+            for (var i = 0; i < this.files.length; i++) {
+                alert((window.URL || window.webkitURL).createObjectURL(this.files[i]));
+                /*var stream = client.send(this.files[i], {name: this.files[i].name, size: this.files[i].size});*/
+            }
+        });
+    });
+
+
+    /*==================================================================DOSSIER=============================================================*/
+
+    function dossier() {
+        /* $( "#begin" ).css( "display", "none" );
   $( "#game" ).css( "display", "block" );
   $( "#musique" ).css( "display", "block" );
   $( "#controle" ).css( "display", "block" );
   $( "#controle2" ).css( "display", "block" );*/
-  $( "#accueil" ).css( "display", "none" );
-  $( "#start_dossier" ).css( "display", "block" );
-  MODE = 'dossier';
-  socket.emit('mode', MODE); 
-  //socket.emit('loadfiles', $("#path").val());
-}
+        $("#accueil").css("display", "none");
+        $("#start_dossier").css("display", "block");
+        MODE = 'dossier';
+        socket.emit('mode', MODE);
+        //socket.emit('loadfiles', $("#path").val());
+    }
 
-function startdossier(){
-  socket.emit('loadfiles', $("#path").val());
-  $( "#start_dossier" ).css( "display", "none" );
-  $( "#ecranMusique" ).css( "display", "block" );
+    function startdossier() {
+        socket.emit('loadfiles', $("#path").val());
+        $("#start_dossier").css("display", "none");
+        $("#ecranMusique").css("display", "block");
 
-}
+    }
 
-socket.on('addMusique', function(artiste, titre){
-  $( "#listeMusiques" ).append( "<a class=\"list-group-item\" \">"+ artiste + " - " + titre +" </a>");
-});
+    socket.on('addMusique', function(id, artiste, titre) {
+        $("#listeMusiques").append("<a id=\"mus_" + id + "\" class=\"list-group-item\" \">" + artiste + " - " + titre + " </a>");
+    });
+
+    socket.on('colorMusic', function(id) {
+        $("#mus_" + id).css("background-color", "#ffff00");
+        if (id > 0)
+            $("#mus_" + (id - 1)).css("background-color", "#white");
+    });
+
+    /*===========================================================Lecture==========================================================*/
+    var audioElement = document.createElement('audio');
+    var client = new BinaryClient('ws://localhost:9000');
+    // Received new stream from server!
+    client.on('close', function(stream, meta) {
+        //alert("cc titi");
+        // location.reload();
+    });
 
 
+    client.on('open', function() {});
+    client.on('stream', function(stream, meta) {
+
+        var parts = [];
+        stream.on('data', function(data) {
+            parts.push(data);
+        });
 
 
+        stream.on('end', function() {
+            audioElement.src = (window.URL || window.webkitURL).createObjectURL(new Blob(parts));
+            setTimeout(function() {
+                audioElement.play();
+            }, 500);
+        });
+    });
 
-
-
-</script>
-<style>
-
-
-#box {
-  border: 3px dashed #ccc;
-  padding: 10px;
-  background: #fff;
-  min-height: 100px;
-  /*  overflow-y: auto;*/
-}
-</style>
+    socket.on('stop', function() {
+        if (!audioElement.paused) {
+            audioElement.pause();
+        }
+    });
+    </script>
+    <style>
+    #box {
+        border: 3px dashed #ccc;
+        padding: 10px;
+        background: #fff;
+        min-height: 100px;
+        /*  overflow-y: auto;*/
+    }
+    </style>
 </head>
+
 <body>
-  <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+    <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand">Votre adresse ip: <span id="adresseip"></span></a>
+            </div>
+
+        </div>
+        <!-- /.container -->
+    </div>
+    <!-- /.navbar -->
+
+
     <div class="container">
-      <div class="navbar-header">
-        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-        <a class="navbar-brand" >Votre adresse ip: <span id="adresseip"></span></a>
-      </div>
+        <div class="row">
+            <div id="controle" style="display: none;">
+                <div class="col-xs-4 col-sm-2 sidebar-offcanvas" id="sidebar" role="navigation" style="margin-top: 20px;">
+                    <div class="list-group" id="ctrl">
+                        <a class="list-group-item active">Controles : </a>
+                        <button type="button" class="btn btn-default btn-lg" style="width: 48%" onclick="play()">
+                            <i class="glyphicon glyphicon-play"></i>
+                        </button>
+                        <button type="button" class="btn btn-default btn-lg" style="width: 48%" onclick="pause()">
+                            <i class="glyphicon glyphicon-pause"></i>
+                        </button>
 
-    </div><!-- /.container -->
-  </div><!-- /.navbar -->
-
-
-  <div class="container">
-    <div class="row">
-      <div id ="controle" style="display: none;">
-        <div class="col-xs-4 col-sm-2 sidebar-offcanvas" id="sidebar" role="navigation" style="margin-top: 20px;">
-          <div class="list-group" id="ctrl">
-            <a class="list-group-item active">Controles : </a>
-            <button type="button" class="btn btn-default btn-lg" style="width: 48%" onclick="play()">
-              <i class="glyphicon glyphicon-play"></i>
-            </button>
-            <button type="button" class="btn btn-default btn-lg" style="width: 48%" onclick="pause()">
-              <i class="glyphicon glyphicon-pause"></i>
-            </button>
-
-          </div>
-        </div>
-      </div>
-
-
-      <div id ="start_dossier" style="display: none;">
-        <div class="col-xs-8 col-sm-6">
-          <div class="jumbotron"  style="margin-top: 100px;  background-color: white">
-            <div>Indiquer le chemin du dossier :</div>
-            <input type="text" name="path" id="path" style="width:80%">
-            <button type="submit" class="btn btn-success"  onclick="startdossier()" ><span style="font-size: 20px;">Start</span></button>
-          </div>
-        </div>
-      </div>
-
-      <div id ="ecranMusique" style="display: none;">
-        <div class="col-xs-8 col-sm-6">
-          <div class="list-group" id="listeMusiques">
-            <a class="list-group-item active">Playliste: </a>
-          </div>
-        </div>
-      </div>
-
-
-
-      <div  id ="game" style="display: none;">
-        <div class="col-xs-8 col-sm-6">
-          <div class="jumbotron"  style="margin-top: 30px;  background-color: white; ">
-            <div id="box">
-              <p class="info">Drop here for info about the dragged item</p>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div id ="accueil" >
-        <div class="col-xs-8 col-sm-6" style="text-align: center;">
-          <div style="margin-top: 200px; ">
-            <div class="col-xs-9 col-sm-6" >
-              <button type="button" class="btn btn-primary btn-lg" onclick="start()"><i class="glyphicon glyphicon-file" style="font-size: 6em"></i><br/>Drop</button>
+
+            <div id="start_dossier" style="display: none;">
+                <div class="col-xs-8 col-sm-6">
+                    <div class="jumbotron" style="margin-top: 100px;  background-color: white">
+                        <div>Indiquer le chemin du dossier :</div>
+                        <input type="text" name="path" id="path" style="width:80%">
+                        <button type="submit" class="btn btn-success" onclick="startdossier()">
+                            <span style="font-size: 20px;">Start</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="col-xs-9 col-sm-6">
-              <button type="button" class="btn btn-info btn-lg" onclick="dossier()"><i class="glyphicon glyphicon-folder-open" style="font-size: 6em"></i><br/>Dossier (beta)</button>
+
+            <div id="ecranMusique" style="display: none;">
+                <div class="col-xs-8 col-sm-6">
+                    <div class="list-group" id="listeMusiques">
+                        <a class="list-group-item active">Playliste: </a>
+                    </div>
+                </div>
             </div>
-          </div>
+
+
+
+            <div id="game" style="display: none;">
+                <div class="col-xs-8 col-sm-6">
+                    <div class="jumbotron" style="margin-top: 30px;  background-color: white; ">
+                        <div id="box">
+                            <p class="info">Drop here for info about the dragged item</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="accueil">
+                <div class="col-xs-8 col-sm-6" style="text-align: center;">
+                    <div style="margin-top: 200px; ">
+                        <div class="col-xs-9 col-sm-6">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="start()"><i class="glyphicon glyphicon-file" style="font-size: 6em"></i>
+                                <br/>Drop</button>
+                        </div>
+                        <div class="col-xs-9 col-sm-6">
+                            <button type="button" class="btn btn-info btn-lg" onclick="dossier()"><i class="glyphicon glyphicon-folder-open" style="font-size: 6em"></i>
+                                <br/>Dossier (beta)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="col-xs-6 col-sm-4 sidebar-offcanvas" id="sidebar" role="navigation" style="margin-top: 20px;">
+                <div class="list-group" id="adv">
+                    <a class="list-group-item active">Joueurs: </a>
+                </div>
+            </div>
+
         </div>
-      </div>
+        <div class="row">
+            <div id="controle2" style="display: none;">
+                <div class="col-xs-4 col-sm-2 sidebar-offcanvas" id="sidebar" role="navigation" style="margin-top: 20px;">
+                </div>
+            </div>
 
+            <div id="musique" style="display: none;">
+                <div class="col-xs-8 col-sm-6">
+                    <div class="jumbotron" style="margin-top: 20px;  background-color: white">
+                        <h2>Lecture en cours</h2>
+                        <p>Titre :
+                            <span id="titre"></span>
+                        </p>
+                        <p>Artiste :
+                            <span id="artiste"></span>
+                        </p>
+                        <p>Album :
+                            <span id="album"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
 
+            <div class="col-xs-6 col-sm-4 sidebar-offcanvas" id="historique" role="navigation" style="margin-top: 20px; display: none;">
+                <div class="list-group" id="his">
+                    <a class="list-group-item active">Historique: </a>
+                </div>
+            </div>
 
-      <div class="col-xs-6 col-sm-4 sidebar-offcanvas" id="sidebar" role="navigation" style="margin-top: 20px;">
-        <div class="list-group" id="adv">
-          <a class="list-group-item active">Joueurs: </a>
         </div>
-      </div>
 
     </div>
-    <div class="row">
-      <div id ="controle2" style="display: none;">
-        <div class="col-xs-4 col-sm-2 sidebar-offcanvas" id="sidebar" role="navigation" style="margin-top: 20px;">
-        </div>
-      </div>
-
-      <div id ="musique" style="display: none;">
-        <div class="col-xs-8 col-sm-6">
-          <div class="jumbotron"  style="margin-top: 20px;  background-color: white">
-            <h2>Lecture en cours</h2>
-            <p> Titre : <span id="titre"></span></p>
-            <p> Artiste : <span id="artiste"></span></p>
-            <p> Album : <span id="album"></span></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-xs-6 col-sm-4 sidebar-offcanvas" id="historique" role="navigation" style="margin-top: 20px; display: none;">
-        <div class="list-group" id="his">
-          <a class="list-group-item active">Historique: </a>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
 
 
 </body>
+
 </html>

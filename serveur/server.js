@@ -83,6 +83,7 @@ io.sockets.on('connection', function(socket) {
         if (MODE == "dossier") {
             if (numMusique != nbMusique) {
                 setTimeout(function() {
+                    io.sockets.emit('historique', artiste, musique);
                     playMusique(numMusique);
                 }, 3000);
             }
@@ -220,7 +221,7 @@ server.listen(8080);
 
 function addMusique(fichier, i, size) {
     for (var i = 0; i < listeMusiques.length; i++) {
-        io.sockets.emit('addMusique', listeMusiques[i].artist, listeMusiques[i].titre);
+        io.sockets.emit('addMusique',i,listeMusiques[i].artist, listeMusiques[i].titre);
     }
 
     playMusique(numMusique);
@@ -232,7 +233,7 @@ function playMusique(i) {
     musique = listeMusiques[i].titre;
     artiste = listeMusiques[i].artist;
     album = listeMusiques[i].album;
-
+    io.sockets.emit('colorMusic',i);
     var file = fs.createReadStream(listeMusiques[i].path);
     nbfinLecture = 0;
     for (var i = 0; i < clients.length; i++) {
@@ -276,10 +277,10 @@ server.on('connection', function(client) {
         clients.splice(clients.indexOf(client), 1);
     });
     client.on('stream', function(stream, meta) {
-        if (!localisdelete) {
+        /*if (!localisdelete) {
             localisdelete = true;
             clients.splice(clients.indexOf(client), 1);
-        }
+        }*/
         var nom = __dirname + '/public/' + meta.name;
         var file = fs.createWriteStream(__dirname + '\\public\\' + meta.name);
         stream.pipe(file);

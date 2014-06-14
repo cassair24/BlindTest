@@ -6,9 +6,11 @@
     <meta charset="utf-8">
     <link href="css/bootstrap.css" rel="stylesheet">
     <link href="css/signin.css" rel="stylesheet">
+    <link href="css/jquery-impromptu.css" rel="stylesheet">
     <script src="js/binary.js"></script>
     <script src="js/socket.io.js"></script>
     <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script src="js/jquery-impromptu.js"></script>
     <script>
     var nom;
     var prenom;
@@ -128,15 +130,21 @@
             }
         });
 
-
         // Connect to Binary.js server
         var audioElement = document.createElement('audio');
         setTimeout(function() {
             var client = new BinaryClient('ws://' + adresse + ':9000');
             // Received new stream from server!
             client.on('close', function(stream, meta) {
+                $.prompt("La connexuion avec le serveur a été interompue. La page va se recharger dans 5 secondes.");
+                chrono = window.setTimeout(function() {
+                    jQuery.prompt.close();
+                    location.reload();
+                }, 5000);
+                //alert("cc titi");
                 // location.reload();
             });
+
 
             client.on('open', function() {
                 binaryjs = true;
@@ -167,7 +175,7 @@
                     minu = 0;
                     secon2 = 0;
                     estTrouvé = false;
-                    
+
                     continuerChrono = false;
                     setTimeout(function() {
                         continuerChrono = true;

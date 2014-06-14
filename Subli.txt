@@ -1,3 +1,0 @@
-html css js prettify
-html 5
-html attributes
