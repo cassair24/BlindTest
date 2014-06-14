@@ -82,6 +82,7 @@
         socket.on('addPoint', function(id) {
             document.getElementById("bouton").disabled = true;
             estTrouvé = true;
+            clearTimeout(timeout);
             continuerChrono = false;
             if (id == identifiant) {
                 $("#gagne").css("display", "block");
@@ -101,6 +102,7 @@
 
         socket.on('stop', function() {
             if (!audioElement.paused) {
+                clearTimeout(timeout);
                 continuerChrono = false;
                 document.getElementById("bouton").disabled = true;
                 audioElement.pause();
@@ -165,21 +167,23 @@
                     minu = 0;
                     secon2 = 0;
                     estTrouvé = false;
+                    
                     continuerChrono = false;
                     setTimeout(function() {
                         continuerChrono = true;
                         chrono();
                         audioElement.play();
                         document.getElementById("bouton").disabled = false;
-                    }, 300);
+                    }, 500);
 
                     audioElement.addEventListener("ended", function() {
+                        clearTimeout(timeout);
                         continuerChrono = false;
                         document.getElementById("bouton").disabled = true;
-
-                        /*---Mode dossier---*/
                         socket.emit("finlecture");
                     });
+
+
 
                 });
             });
@@ -256,7 +260,7 @@
         document.getElementById("minutes").innerHTML = minu;
 
         if (continuerChrono) {
-            setTimeout('chrono()', 100);
+            timeout = setTimeout('chrono()', 100);
         }
     }
     </script>

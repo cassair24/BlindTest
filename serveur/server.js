@@ -109,9 +109,7 @@ io.sockets.on('connection', function(socket) {
                     }, 3000);
                 }
             }
-            if (MODE == "drop") {
-                io.sockets.emit('historique', artiste, musique);
-            }
+            io.sockets.emit('historique', artiste, musique);
         }
 
     });
@@ -184,9 +182,11 @@ io.sockets.on('connection', function(socket) {
         numMusique = 0;
 
         var i = 1;
+        var j = 1;
         fs.readdir(path, function(err, list) {
             nbMusique = list.length;
             list.forEach(function(file) {
+
                 var fichier = new Fichier();
                 var chemin = path + "\\" + file;
                 console.log(file);
@@ -195,12 +195,20 @@ io.sockets.on('connection', function(socket) {
                     file: chemin,
                     type: id3.OPEN_LOCAL
                 }, function(err, tags) {
-                    fichier.artist = tags.artist;
-                    fichier.titre = tags.title;
-                    fichier.album = tags.album;
-                    addMusique(fichier, i, list.length);
-                    i++;
+                    if (file.indexOf(".mp3") > -1) {
+                        fichier.artist = tags.artist;
+                        fichier.titre = tags.title;
+                        fichier.album = tags.album;
+                        listeMusiques.push(fichier);
+                        listeMusiques = shuffle(listeMusiques);
+                        i++;
+                    }
+                    console.log(j + " " + list.length)
+                    if (j == list.length)
+                        addMusique(fichier, i, list.length);
+                    j++;
                 });
+
 
             });
 
@@ -211,16 +219,11 @@ io.sockets.on('connection', function(socket) {
 server.listen(8080);
 
 function addMusique(fichier, i, size) {
-    listeMusiques.push(fichier);
-    listeMusiques = shuffle(listeMusiques);
-    if (i == size) {
-        for (var i = 0; i < listeMusiques.length; i++) {
-            io.sockets.emit('addMusique', listeMusiques[i].artist, listeMusiques[i].titre);
-        }
-
-        playMusique(numMusique);
-
+    for (var i = 0; i < listeMusiques.length; i++) {
+        io.sockets.emit('addMusique', listeMusiques[i].artist, listeMusiques[i].titre);
     }
+
+    playMusique(numMusique);
 
 }
 
@@ -231,7 +234,7 @@ function playMusique(i) {
     album = listeMusiques[i].album;
 
     var file = fs.createReadStream(listeMusiques[i].path);
-
+    nbfinLecture = 0;
     for (var i = 0; i < clients.length; i++) {
         io.sockets.emit('AffichageEcranDuJeu');
         clients[i].send(file);
@@ -291,7 +294,7 @@ server.on('connection', function(client) {
 
         stream.on('end', function() {
             console.log("nb drop : " + nbMusiqueDrop);
-            if(MODE =='drop' && nbMusiqueDrop>0 && nbfinLecture<1){
+            if (MODE == 'drop' && nbMusiqueDrop > 0 && nbfinLecture < 1) {
                 io.sockets.emit('historique', artiste, musique);
             }
 
@@ -318,7 +321,7 @@ server.on('connection', function(client) {
                 fs.unlinkSync(nom);
             }, 6000);
 
-            nbMusiqueDrop ++;
+            nbMusiqueDrop++;
 
         });
 
