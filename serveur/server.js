@@ -99,9 +99,7 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on('finlecture', function() {
-        console.log("fin lec : " + nbfinLecture);
         if (nbfinLecture < 1) {
-            console.log("cc " + MODE);
             nbfinLecture++;
             if (MODE == "dossier") {
                 if (numMusique != nbMusique) {

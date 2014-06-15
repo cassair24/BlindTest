@@ -176,14 +176,16 @@
                     secon2 = 0;
                     estTrouvé = false;
 
-                    if (typeof timeout !== 'undefined')
+                    if (typeof timeout !== 'undefined'){
                         clearTimeout(timeout);
-
+                    }
                     continuerChrono = false;
                     setTimeout(function() {
-                        continuerChrono = true;
-                        chrono();
-                        audioElement.play();
+                         if (!continuerChrono) {
+                            continuerChrono = true;
+                            chrono();
+                            audioElement.play();
+                        }
                         document.getElementById("bouton").disabled = false;
                     }, 500);
 
