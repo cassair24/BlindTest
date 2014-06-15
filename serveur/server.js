@@ -176,8 +176,6 @@ io.sockets.on('connection', function(socket) {
 
     // export the class
     module.exports = Fichier;
-
-
     socket.on('loadfiles', function(path) {
         listeMusiques = new Array();
         numMusique = 0;
@@ -185,33 +183,41 @@ io.sockets.on('connection', function(socket) {
         var i = 1;
         var j = 1;
         fs.readdir(path, function(err, list) {
-            nbMusique = list.length;
-            list.forEach(function(file) {
+            if (err) {
+                io.sockets.emit('loadfilesFailed', "Le dossier n'existe pas !");
+            } else {
+                nbMusique = list.length;
+                list.forEach(function(file) {
 
-                var fichier = new Fichier();
-                var chemin = path + "\\" + file;
-                console.log(file);
-                fichier.path = chemin;
-                id3({
-                    file: chemin,
-                    type: id3.OPEN_LOCAL
-                }, function(err, tags) {
-                    if (file.indexOf(".mp3") > -1) {
-                        fichier.artist = tags.artist;
-                        fichier.titre = tags.title;
-                        fichier.album = tags.album;
-                        listeMusiques.push(fichier);
-                        listeMusiques = shuffle(listeMusiques);
-                        i++;
-                    }
-                    console.log(j + " " + list.length)
-                    if (j == list.length)
-                        addMusique(fichier, i, list.length);
-                    j++;
+                    var fichier = new Fichier();
+                    var chemin = path + "\\" + file;
+                    fichier.path = chemin;
+                    id3({
+                        file: chemin,
+                        type: id3.OPEN_LOCAL
+                    }, function(err, tags) {
+                        if (file.indexOf(".mp3") > -1) {
+                            fichier.artist = tags.artist;
+                            fichier.titre = tags.title;
+                            fichier.album = tags.album;
+                            listeMusiques.push(fichier);
+                            listeMusiques = shuffle(listeMusiques);
+                            i++;
+                        }
+                        if (j == list.length) {
+                            if (i > 1) {
+                                io.sockets.emit('loadfilesSuccess');
+                                addMusique(fichier, i, list.length);
+                            } else {
+                                io.sockets.emit('loadfilesFailed', "Le dossier ne contient pas de musique");
+                            }
+                        }
+                        j++;
+                    });
+
+
                 });
-
-
-            });
+            }
 
         });
     });
@@ -221,7 +227,7 @@ server.listen(8080);
 
 function addMusique(fichier, i, size) {
     for (var i = 0; i < listeMusiques.length; i++) {
-        io.sockets.emit('addMusique',i,listeMusiques[i].artist, listeMusiques[i].titre);
+        io.sockets.emit('addMusique', i, listeMusiques[i].artist, listeMusiques[i].titre);
     }
 
     playMusique(numMusique);
@@ -229,11 +235,10 @@ function addMusique(fichier, i, size) {
 }
 
 function playMusique(i) {
-    console.log('Num ' + i);
     musique = listeMusiques[i].titre;
     artiste = listeMusiques[i].artist;
     album = listeMusiques[i].album;
-    io.sockets.emit('colorMusic',i);
+    io.sockets.emit('colorMusic', i);
     var file = fs.createReadStream(listeMusiques[i].path);
     nbfinLecture = 0;
     for (var i = 0; i < clients.length; i++) {
@@ -282,49 +287,53 @@ server.on('connection', function(client) {
             clients.splice(clients.indexOf(client), 1);
         }*/
         var nom = __dirname + '/public/' + meta.name;
-        var file = fs.createWriteStream(__dirname + '\\public\\' + meta.name);
-        stream.pipe(file);
-        stream.writable;
-        //
-        // Send progress back
-        stream.on('data', function(data) {
-            stream.write({
-                rx: data.length / meta.size
+        if (meta.name.indexOf(".mp3") > -1) {
+            var file = fs.createWriteStream(__dirname + '\\public\\' + meta.name);
+            stream.pipe(file);
+            stream.writable;
+            //
+            // Send progress back
+            stream.on('data', function(data) {
+                stream.write({
+                    rx: data.length / meta.size
+                });
             });
-        });
 
-        stream.on('end', function() {
-            console.log("nb drop : " + nbMusiqueDrop);
-            if (MODE == 'drop' && nbMusiqueDrop > 0 && nbfinLecture < 1) {
-                io.sockets.emit('historique', artiste, musique);
-            }
+            stream.on('end', function() {
+                console.log("nb drop : " + nbMusiqueDrop);
+                if (MODE == 'drop' && nbMusiqueDrop > 0 && nbfinLecture < 1) {
+                    io.sockets.emit('historique', artiste, musique);
+                }
 
-            nbfinLecture = 0;
+                nbfinLecture = 0;
 
-            var file = fs.createReadStream(nom);
-            for (var i = 0; i < clients.length; i++) {
-                clients[i].send(file);
-            }
-            id3({
-                file: nom,
-                type: id3.OPEN_LOCAL
-            }, function(err, tags) {
-                musique = tags.title;
-                artiste = tags.artist;
-                album = tags.album;
-                console.log("Artiste :" + tags.artist);
-                console.log("Titre :" + tags.title);
-                console.log("Album :" + tags.album);
-                io.sockets.emit('infosMP3', artiste, musique, album);
+                var file = fs.createReadStream(nom);
+                id3({
+                    file: nom,
+                    type: id3.OPEN_LOCAL
+                }, function(err, tags) {
+                    musique = tags.title;
+                    artiste = tags.artist;
+                    album = tags.album;
+                    console.log("Artiste :" + tags.artist);
+                    console.log("Titre :" + tags.title);
+                    console.log("Album :" + tags.album);
+                    io.sockets.emit('infosMP3', artiste, musique, album);
+                    for (var i = 0; i < clients.length; i++) {
+                        clients[i].send(file);
+                    }
+                });
+                setTimeout(function() {
+                    stream.destroy();
+                    fs.unlinkSync(nom);
+                }, 6000);
+
+                nbMusiqueDrop++;
+
             });
-            setTimeout(function() {
-                stream.destroy();
-                fs.unlinkSync(nom);
-            }, 6000);
-
-            nbMusiqueDrop++;
-
-        });
+        } else {
+            io.sockets.emit('alerteFormat');
+        }
 
     });
 });

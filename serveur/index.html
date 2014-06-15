@@ -29,7 +29,17 @@
 
     function play() {
 
-        socket.emit('play');
+        if (!audioElement.paused) {
+            audioElement.pause();
+            socket.emit('stop');
+            document.getElementById("play").setAttribute("class", "glyphicon glyphicon-play");
+        } else {
+            socket.emit('play');
+            audioElement.play();
+            document.getElementById("play").setAttribute("class", "glyphicon glyphicon-pause");
+        }
+
+
     }
 
 
@@ -50,7 +60,11 @@
     });
 
     client.on('close', function() {
-        location.reload();
+        $.prompt("La connexion avec le serveur a été interompue. La page va se recharger dans 5 secondes.");
+        setTimeout(function() {
+            jQuery.prompt.close();
+            location.reload();
+        }, 5000);
 
     });
 
@@ -135,6 +149,10 @@
         $("#adv").append("<a class=\"list-group-item active\">Participants: </a>");
     });
 
+    socket.on('alerteFormat', function() {
+        alert("Le format du fichier n'est pas pris en charge !")
+    });
+
     function start() {
         MODE = 'drop';
         socket.emit('mode', MODE);
@@ -147,14 +165,14 @@
         socket.emit('AffichageEcranDuJeu');
     }
 
+    function sound() {
 
+        if (audioElement.muted)
+            document.getElementById("sound").setAttribute("class", "glyphicon glyphicon-volume-off");
+        else
+            document.getElementById("sound").setAttribute("class", "glyphicon glyphicon-volume-up");
 
-    function play() {
-        socket.emit('play');
-    }
-
-    function pause() {
-        socket.emit('stop');
+        audioElement.muted = !(audioElement.muted)
     }
 
     $(function() {
@@ -184,10 +202,16 @@
 
     function startdossier() {
         socket.emit('loadfiles', $("#path").val());
+    }
+
+    socket.on('loadfilesFailed', function(message) {
+        alert(message);
+    });
+
+    socket.on('loadfilesSuccess', function() {
         $("#start_dossier").css("display", "none");
         $("#ecranMusique").css("display", "block");
-
-    }
+    });
 
     socket.on('addMusique', function(id, artiste, titre) {
         $("#listeMusiques").append("<a id=\"mus_" + id + "\" class=\"list-group-item\" \">" + artiste + " - " + titre + " </a>");
@@ -222,14 +246,13 @@
             audioElement.src = (window.URL || window.webkitURL).createObjectURL(new Blob(parts));
             setTimeout(function() {
                 audioElement.play();
+                document.getElementById("play").setAttribute("class", "glyphicon glyphicon-pause");
             }, 500);
-        });
-    });
 
-    socket.on('stop', function() {
-        if (!audioElement.paused) {
-            audioElement.pause();
-        }
+            audioElement.addEventListener("ended", function() {
+                document.getElementById("play").setAttribute("class", "glyphicon glyphicon-play");
+            });
+        });
     });
     </script>
     <style>
@@ -269,11 +292,13 @@
                     <div class="list-group" id="ctrl">
                         <a class="list-group-item active">Controles : </a>
                         <button type="button" class="btn btn-default btn-lg" style="width: 48%" onclick="play()">
-                            <i class="glyphicon glyphicon-play"></i>
+                            <i id="play" class="glyphicon glyphicon-play"></i>
                         </button>
-                        <button type="button" class="btn btn-default btn-lg" style="width: 48%" onclick="pause()">
-                            <i class="glyphicon glyphicon-pause"></i>
                         </button>
+                        <button type="button" class="btn btn-default btn-lg" style="width: 48%" onclick="sound()">
+                            <i id="sound" class="glyphicon glyphicon-volume-off"></i>
+                        </button>
+
 
                     </div>
                 </div>

@@ -136,8 +136,8 @@
             var client = new BinaryClient('ws://' + adresse + ':9000');
             // Received new stream from server!
             client.on('close', function(stream, meta) {
-                $.prompt("La connexuion avec le serveur a été interompue. La page va se recharger dans 5 secondes.");
-                chrono = window.setTimeout(function() {
+                $.prompt("La connexion avec le serveur a été interompue. La page va se recharger dans 5 secondes.");
+                setTimeout(function() {
                     jQuery.prompt.close();
                     location.reload();
                 }, 5000);
@@ -175,6 +175,9 @@
                     minu = 0;
                     secon2 = 0;
                     estTrouvé = false;
+
+                    if (typeof timeout !== 'undefined')
+                        clearTimeout(timeout);
 
                     continuerChrono = false;
                     setTimeout(function() {
