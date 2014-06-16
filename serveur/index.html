@@ -102,12 +102,19 @@
                 submit: function(e, v, m, f) {
                     if (v) {
                         socket.emit('addPoint', id);
-                        if (MODE == 'drop')
+                        if (MODE == 'drop') {
                             socket.emit('play');
+                            if (audioElement.paused) {
+                                audioElement.play();
+                            }
+                        }
                         socket.emit('finreponse', id);
                         $("#" + id).css("background-color", "white");
                     } else {
                         socket.emit('play');
+                        if (audioElement.paused) {
+                            audioElement.play();
+                        }
                         socket.emit('finreponse', id);
                         $("#" + id).css("background-color", "white");
                         clearTimeout(chrono);
@@ -123,6 +130,9 @@
             chrono = window.setTimeout(function() {
                 jQuery.prompt.close();
                 socket.emit('play');
+                if (audioElement.paused) {
+                    audioElement.play();
+                }
                 socket.emit('finreponse', id);
                 $("#" + id).css("background-color", "white");
             }, 5000);
@@ -152,6 +162,19 @@
     socket.on('alerteFormat', function() {
         alert("Le format du fichier n'est pas pris en charge !")
     });
+
+    socket.on('stop', function() {
+        if (!audioElement.paused) {
+            audioElement.pause();
+        }
+    });
+
+    socket.on('play', function() {
+        if (audioElement.paused) {
+            audioElement.play();
+        }
+    });
+
 
     function start() {
         MODE = 'drop';
