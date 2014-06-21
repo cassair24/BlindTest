@@ -51,7 +51,7 @@
         box.on('drop', function(e) {
             e.originalEvent.preventDefault();
             var file = e.originalEvent.dataTransfer.files[0];
-            socket.emit('stop');
+            socket.emit('loading');
             var stream = client.send(file, {
                 name: file.name,
                 size: file.size
@@ -79,8 +79,8 @@
         $("#adresseip").append(adresse);
     });
 
-    socket.on('newplayer', function(nom, prenom, id, score) {
-        $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span> </a>");
+    socket.on('newplayer', function(nom, prenom, id, score, temps) {
+        $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + temps + "</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span>  </a>");
     });
 
     socket.on('deleteplayer', function(id) {
@@ -88,7 +88,7 @@
         $("#" + id).remove();
     });
 
-    socket.on('reponse', function(nom, prenom, id) {
+    socket.on('reponse', function(nom, prenom, id, tmps) {
         if (!prompt) {
             $("#" + id).css("background-color", "#ffff00");
 
@@ -101,13 +101,15 @@
                 },
                 submit: function(e, v, m, f) {
                     if (v) {
-                        socket.emit('addPoint', id);
-                        if (MODE == 'drop') {
+                        socket.emit('addPoint', id, tmps);
+                        if (MODE == 'drop') 
                             socket.emit('play');
-                            if (audioElement.paused) {
+                        if (MODE == 'dossier') 
+                            socket.emit('playSansChrono');
+
+                        if (audioElement.paused) {
                                 audioElement.play();
                             }
-                        }
                         socket.emit('finreponse', id);
                         $("#" + id).css("background-color", "white");
                     } else {
@@ -117,7 +119,6 @@
                         }
                         socket.emit('finreponse', id);
                         $("#" + id).css("background-color", "white");
-                        clearTimeout(chrono);
                     }
                 }
             });
@@ -234,6 +235,7 @@
     socket.on('loadfilesSuccess', function() {
         $("#start_dossier").css("display", "none");
         $("#ecranMusique").css("display", "block");
+        $("#controle").css("display", "block");
     });
 
     socket.on('addMusique', function(id, artiste, titre) {

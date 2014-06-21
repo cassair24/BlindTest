@@ -52,6 +52,7 @@ io.sockets.on('connection', function(socket) {
         socket.prenom = prenom;
         socket.identifiant = identifiants;
         socket.score = 0;
+        socket.temps = 0;
         socket.emit('addId', identifiants);
 
         identifiants++;
@@ -59,19 +60,20 @@ io.sockets.on('connection', function(socket) {
         sendallclients();
     });
 
-    socket.on('proposition', function() {
+    socket.on('proposition', function(tmps) {
         io.sockets.emit('stop');
-        io.sockets.emit('reponse', socket.nom, socket.prenom, socket.identifiant);
+        io.sockets.emit('reponse', socket.nom, socket.prenom, socket.identifiant, tmps);
     });
 
     socket.on('finreponse', function(id) {
         io.sockets.emit('finreponse', id)
     });
 
-    socket.on('addPoint', function(id) {
+    socket.on('addPoint', function(id, tmps) {
         for (var i = 0; i < clis.length; i++) {
             if (clis[i].identifiant == id) {
                 clis[i].score++;
+                clis[i].temps += tmps;
                 break;
             }
 
@@ -86,6 +88,8 @@ io.sockets.on('connection', function(socket) {
                     io.sockets.emit('historique', artiste, musique);
                     playMusique(numMusique);
                 }, 3000);
+            } else {
+                sendClassement();
             }
         }
 
@@ -106,6 +110,8 @@ io.sockets.on('connection', function(socket) {
                     setTimeout(function() {
                         playMusique(numMusique);
                     }, 3000);
+                } else {
+                    sendClassement();
                 }
             }
             io.sockets.emit('historique', artiste, musique);
@@ -157,8 +163,16 @@ io.sockets.on('connection', function(socket) {
         socket.broadcast.emit('stop');
     });
 
+    socket.on('loading', function() {
+        socket.broadcast.emit('loading');
+    });
+
     socket.on('play', function() {
         socket.broadcast.emit('play');
+    });
+
+    socket.on('playSansChrono', function() {
+        socket.broadcast.emit('playSansChrono');
     });
 
 
@@ -184,7 +198,7 @@ io.sockets.on('connection', function(socket) {
             if (err) {
                 io.sockets.emit('loadfilesFailed', "Le dossier n'existe pas !");
             } else {
-                nbMusique = list.length;
+                //nbMusique = list.length;
                 list.forEach(function(file) {
 
                     var fichier = new Fichier();
@@ -204,6 +218,7 @@ io.sockets.on('connection', function(socket) {
                         }
                         if (j == list.length) {
                             if (i > 1) {
+                                nbMusique = i - 1;
                                 io.sockets.emit('loadfilesSuccess');
                                 addMusique(fichier, i, list.length);
                             } else {
@@ -252,7 +267,16 @@ function sendallclients() {
     });
     io.sockets.emit('cleanplayers');
     for (var i = 0; i < clis.length; i++) {
-        io.sockets.emit('newplayer', clis[i].nom, clis[i].prenom, clis[i].identifiant, clis[i].score);
+        io.sockets.emit('newplayer', clis[i].nom, clis[i].prenom, clis[i].identifiant, clis[i].score, clis[i].temps);
+    }
+}
+
+function sendClassement() {
+    clis.sort(function(a, b) {
+        return b.score - a.score
+    });
+    for (var i = 0; i < clis.length; i++) {
+        io.sockets.emit('classement', clis[i].nom, clis[i].prenom, clis[i].identifiant, clis[i].score, clis[i].temps);
     }
 }
 
