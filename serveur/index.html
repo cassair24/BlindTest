@@ -80,12 +80,17 @@
     });
 
     socket.on('newplayer', function(nom, prenom, id, score, temps) {
-        $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + temps + "</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span>  </a>");
+        $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + temps + " s</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span>  </a>");
     });
 
     socket.on('deleteplayer', function(id) {
-        alert(id);
+        //alert(id);
         $("#" + id).remove();
+    });
+
+    socket.on('restart', function() {
+        alert("Il n'y a plus aucun joueur, le jeux va redémarrer !");
+        location.reload();
     });
 
     socket.on('reponse', function(nom, prenom, id, tmps) {
@@ -100,6 +105,7 @@
                     "Non": false
                 },
                 submit: function(e, v, m, f) {
+                    clearTimeout(alertChrono);
                     if (v) {
                         socket.emit('addPoint', id, tmps);
                         if (MODE == 'drop') 
@@ -128,7 +134,7 @@
             myPrompt.on('impromptu:close ', function(e) {
                 prompt = false;
             });
-            chrono = window.setTimeout(function() {
+            alertChrono = window.setTimeout(function() {
                 jQuery.prompt.close();
                 socket.emit('play');
                 if (audioElement.paused) {

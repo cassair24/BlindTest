@@ -32,6 +32,7 @@
 
     function reponse() {
         var tmps = ((mille + (secon * 10) + (secon2 * 100) + (minu * 600)) / 10);
+        tmps = Number(tmps.toString().match(/^\d+(?:\.\d{0,2})?/));
         socket.emit("proposition", tmps);
     }
 
@@ -67,9 +68,9 @@
 
         socket.on('newplayer', function(nom, prenom, id, score, tmps) {
             if (id == identifiant) {
-                $("#adv").append("<a class=\"list-group-item\" style=\"color:red;\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + tmps + "</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span> </a>");
+                $("#adv").append("<a class=\"list-group-item\" style=\"color:red;\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + tmps + " s</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span> </a>");
             } else {
-                $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + tmps + "</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span>  </a>");
+                $("#adv").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + tmps + " s</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span>  </a>");
             }
         });
 
@@ -83,7 +84,7 @@
             $("#chrono").css("display", "none");
             $("#sidebar").css("display", "none");
             $("#classement").css("display", "block");
-            $("#class").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + tmps + "</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span>  </a>");
+            $("#class").append("<a class=\"list-group-item\" id=\"" + id + "\">" + prenom + " " + nom + " <span class=\"badge pull-right\" id=\"span_" + id + "\" style=\"background-color:white; color:#428BCA\">" + tmps + " s</span> <span class=\"badge\" id=\"span_" + id + "\">" + score + "</span>  </a>");
         });
 
 

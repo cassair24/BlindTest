@@ -6,6 +6,7 @@ var fs = require('fs');
 var id3 = require('id3js');
 var clients = new Array();
 var clis = new Array();
+var histo = new Array();
 var listeMusiques = new Array();
 var identifiants = 0;
 
@@ -34,7 +35,6 @@ app.get('/', function(req, res) {
 io.sockets.on('connection', function(socket) {
 
     socket.on('mode', function(mode) {
-        console.log("MODE " + mode);
         MODE = mode;
     });
 
@@ -71,13 +71,15 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('endDrop', function() {
         sendClassement();
+        restart();
     });
 
     socket.on('addPoint', function(id, tmps) {
         for (var i = 0; i < clis.length; i++) {
             if (clis[i].identifiant == id) {
                 clis[i].score++;
-                clis[i].temps += tmps;
+                clis[i].temps += Number(tmps.toString().match(/^\d+(?:\.\d{0,2})?/));
+                clis[i].temps = Number(clis[i].temps.toString().match(/^\d+(?:\.\d{0,2})?/));
                 break;
             }
 
@@ -94,6 +96,7 @@ io.sockets.on('connection', function(socket) {
                 }, 3000);
             } else {
                 sendClassement();
+                restart();
             }
         }
 
@@ -103,8 +106,24 @@ io.sockets.on('connection', function(socket) {
 
         socket.broadcast.emit('deleteplayer', socket.identifiant);
         clis.splice(clis.indexOf(socket), 1);
-        //clients.splice(clients.indexOf(client),1);
+        if (clis.length == 0) {
+            io.sockets.emit('restart');
+            restart();
+        }
     });
+
+    function restart() {
+
+        clients = new Array();
+            clis = new Array();
+            //histo = new Array();
+            listeMusiques = new Array();
+            identifiants = 0;
+            numMusique = 0;
+            nbMusique = 0;
+            nbMusiqueDrop = 0;
+            nbfinLecture = 0;
+    }
 
     socket.on('finlecture', function() {
         if (nbfinLecture < 1) {
@@ -134,7 +153,6 @@ io.sockets.on('connection', function(socket) {
             ifaces[dev].forEach(function(details) {
                 if (details.family == 'IPv4' && details.internal == false) {
                     if (details.address.indexOf("192.168.0.") > -1 || details.address.indexOf("192.168.1.") > -1) {
-                        console.log(dev + ' ' + details.address + ' ' + details.internal);
                         socket.emit('adresse', details.address);
                     }
 
@@ -147,14 +165,12 @@ io.sockets.on('connection', function(socket) {
 
 
     socket.on('clean', function() {
-        console.log('Clean !!!! ');
         fs.readdir(__dirname + '\\public\\', function(err, list) {
             list.forEach(function(file) {
                 fs.unlink(__dirname + '\\public\\' + file, function(err) {
                     if (err) {
                         console.log(err);
                     }
-                    console.log('successfully deleted ' + file);
                 });
             });
         });
@@ -231,7 +247,6 @@ io.sockets.on('connection', function(socket) {
                         }
                         j++;
                     });
-
 
                 });
             }
@@ -313,61 +328,58 @@ server.on('connection', function(client) {
             clients.splice(clients.indexOf(client), 1);
         }*/
         var nom = __dirname + '/public/' + meta.name;
-        /*fs.exists(__dirname + '\\public\\' + meta.name, function(exists) {
-            if (!exists) {*/
-                console.log(__dirname + '\\public\\' + meta.name);
-                if (meta.name.indexOf(".mp3") > -1) {
-                    var file = fs.createWriteStream(__dirname + '\\public\\' + meta.name);
-                    stream.pipe(file);
-                    stream.writable;
-                    //
-                    // Send progress back
-                    stream.on('data', function(data) {
-                        stream.write({
-                            rx: data.length / meta.size
-                        });
+        if (histo.indexOf(nom) == -1) {
+            histo.push(nom);
+            if (meta.name.indexOf(".mp3") > -1) {
+                var file = fs.createWriteStream(__dirname + '\\public\\' + meta.name);
+                stream.pipe(file);
+                stream.writable;
+                //
+                // Send progress back
+                stream.on('data', function(data) {
+                    stream.write({
+                        rx: data.length / meta.size
                     });
+                });
 
-                    stream.on('end', function() {
-                        console.log("nb drop : " + nbMusiqueDrop);
-                        if (MODE == 'drop' && nbMusiqueDrop > 0 && nbfinLecture < 1) {
-                            io.sockets.emit('historique', artiste, musique);
+                stream.on('end', function() {
+                    if (MODE == 'drop' && nbMusiqueDrop > 0 && nbfinLecture < 1) {
+                        io.sockets.emit('historique', artiste, musique);
+                    }
+
+                    nbfinLecture = 0;
+
+                    var file = fs.createReadStream(nom);
+                    id3({
+                        file: nom,
+                        type: id3.OPEN_LOCAL
+                    }, function(err, tags) {
+                        musique = tags.title;
+                        artiste = tags.artist;
+                        album = tags.album;
+                        console.log("Artiste :" + tags.artist);
+                        console.log("Titre :" + tags.title);
+                        console.log("Album :" + tags.album);
+                        io.sockets.emit('infosMP3', artiste, musique, album);
+                        for (var i = 0; i < clients.length; i++) {
+                            clients[i].send(file);
                         }
+                    });
+                    setTimeout(function() {
+                        //stream.destroy();
+                        fs.unlinkSync(nom);
+                    }, 1000);
 
-                        nbfinLecture = 0;
+                    nbMusiqueDrop++;
 
-                        var file = fs.createReadStream(nom);
-                        id3({
-                            file: nom,
-                            type: id3.OPEN_LOCAL
-                        }, function(err, tags) {
-                            musique = tags.title;
-                            artiste = tags.artist;
-                            album = tags.album;
-                            console.log("Artiste :" + tags.artist);
-                            console.log("Titre :" + tags.title);
-                            console.log("Album :" + tags.album);
-                            io.sockets.emit('infosMP3', artiste, musique, album);
-                            for (var i = 0; i < clients.length; i++) {
-                                clients[i].send(file);
-                            }
-                        });
-                        setTimeout(function() {
-                            stream.destroy();
-                            fs.unlinkSync(nom);
-                        }, 6000);
-
-                        nbMusiqueDrop++;
-
-                   });
-                } else {
-                    io.sockets.emit('alerteFormat');
-                }
-           /* }
-            else {
-                io.sockets.emit('alerteExist');
+                });
+            } else {
+                io.sockets.emit('alerteFormat');
             }
-        });*/
+        } else {
+            io.sockets.emit('alerteExist');
+        }
+
 
     });
 });
