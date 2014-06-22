@@ -164,6 +164,10 @@
         alert("Le format du fichier n'est pas pris en charge !")
     });
 
+    socket.on('alerteExist', function() {
+        alert("Le musique a déjà été joué")
+    });
+
     socket.on('stop', function() {
         if (!audioElement.paused) {
             audioElement.pause();
@@ -184,9 +188,14 @@
         $("#game").css("display", "block");
         $("#musique").css("display", "block");
         $("#controle").css("display", "block");
-        $("#controle2").css("display", "block");
+        $("#stop").css("display", "block");
         $("#historique").css("display", "block");
         socket.emit('AffichageEcranDuJeu');
+    }
+
+    function stop() {
+        socket.emit('endDrop');
+        location.reload();
     }
 
     function sound() {
@@ -342,7 +351,7 @@
                 </div>
             </div>
 
-            <div id="ecranMusique" style="display: none;">
+            <div id="ecranMusique" style="margin-top: 20px; display: none;">
                 <div class="col-xs-8 col-sm-6">
                     <div class="list-group" id="listeMusiques">
                         <a class="list-group-item active">Playliste: </a>
@@ -371,7 +380,7 @@
                         </div>
                         <div class="col-xs-9 col-sm-6">
                             <button type="button" class="btn btn-info btn-lg" onclick="dossier()"><i class="glyphicon glyphicon-folder-open" style="font-size: 6em"></i>
-                                <br/>Dossier (beta)</button>
+                                <br/>Dossier</button>
                         </div>
                     </div>
                 </div>
@@ -389,6 +398,16 @@
         <div class="row">
             <div id="controle2" style="display: none;">
                 <div class="col-xs-4 col-sm-2 sidebar-offcanvas" id="sidebar" role="navigation" style="margin-top: 20px;">
+                </div>
+            </div>
+
+            <div id="stop" style="display: none;">
+                <div class="col-xs-4 col-sm-2">
+                    <div style="text-align:center; width:100%; margin-top: 20px;">
+                        <button type="submit" class="btn btn-danger" id="bouton" style="width: 100%; height: auto;" onclick="stop()">
+                            <span style="font-size: 40px;">Stop</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 

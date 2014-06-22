@@ -69,6 +69,10 @@ io.sockets.on('connection', function(socket) {
         io.sockets.emit('finreponse', id)
     });
 
+    socket.on('endDrop', function() {
+        sendClassement();
+    });
+
     socket.on('addPoint', function(id, tmps) {
         for (var i = 0; i < clis.length; i++) {
             if (clis[i].identifiant == id) {
@@ -309,53 +313,61 @@ server.on('connection', function(client) {
             clients.splice(clients.indexOf(client), 1);
         }*/
         var nom = __dirname + '/public/' + meta.name;
-        if (meta.name.indexOf(".mp3") > -1) {
-            var file = fs.createWriteStream(__dirname + '\\public\\' + meta.name);
-            stream.pipe(file);
-            stream.writable;
-            //
-            // Send progress back
-            stream.on('data', function(data) {
-                stream.write({
-                    rx: data.length / meta.size
-                });
-            });
+        /*fs.exists(__dirname + '\\public\\' + meta.name, function(exists) {
+            if (!exists) {*/
+                console.log(__dirname + '\\public\\' + meta.name);
+                if (meta.name.indexOf(".mp3") > -1) {
+                    var file = fs.createWriteStream(__dirname + '\\public\\' + meta.name);
+                    stream.pipe(file);
+                    stream.writable;
+                    //
+                    // Send progress back
+                    stream.on('data', function(data) {
+                        stream.write({
+                            rx: data.length / meta.size
+                        });
+                    });
 
-            stream.on('end', function() {
-                console.log("nb drop : " + nbMusiqueDrop);
-                if (MODE == 'drop' && nbMusiqueDrop > 0 && nbfinLecture < 1) {
-                    io.sockets.emit('historique', artiste, musique);
+                    stream.on('end', function() {
+                        console.log("nb drop : " + nbMusiqueDrop);
+                        if (MODE == 'drop' && nbMusiqueDrop > 0 && nbfinLecture < 1) {
+                            io.sockets.emit('historique', artiste, musique);
+                        }
+
+                        nbfinLecture = 0;
+
+                        var file = fs.createReadStream(nom);
+                        id3({
+                            file: nom,
+                            type: id3.OPEN_LOCAL
+                        }, function(err, tags) {
+                            musique = tags.title;
+                            artiste = tags.artist;
+                            album = tags.album;
+                            console.log("Artiste :" + tags.artist);
+                            console.log("Titre :" + tags.title);
+                            console.log("Album :" + tags.album);
+                            io.sockets.emit('infosMP3', artiste, musique, album);
+                            for (var i = 0; i < clients.length; i++) {
+                                clients[i].send(file);
+                            }
+                        });
+                        setTimeout(function() {
+                            stream.destroy();
+                            fs.unlinkSync(nom);
+                        }, 6000);
+
+                        nbMusiqueDrop++;
+
+                   });
+                } else {
+                    io.sockets.emit('alerteFormat');
                 }
-
-                nbfinLecture = 0;
-
-                var file = fs.createReadStream(nom);
-                id3({
-                    file: nom,
-                    type: id3.OPEN_LOCAL
-                }, function(err, tags) {
-                    musique = tags.title;
-                    artiste = tags.artist;
-                    album = tags.album;
-                    console.log("Artiste :" + tags.artist);
-                    console.log("Titre :" + tags.title);
-                    console.log("Album :" + tags.album);
-                    io.sockets.emit('infosMP3', artiste, musique, album);
-                    for (var i = 0; i < clients.length; i++) {
-                        clients[i].send(file);
-                    }
-                });
-                setTimeout(function() {
-                    stream.destroy();
-                    fs.unlinkSync(nom);
-                }, 6000);
-
-                nbMusiqueDrop++;
-
-            });
-        } else {
-            io.sockets.emit('alerteFormat');
-        }
+           /* }
+            else {
+                io.sockets.emit('alerteExist');
+            }
+        });*/
 
     });
 });
