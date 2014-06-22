@@ -20,3 +20,5 @@ Le Client
 Chaque joueur doit ouvrir le fichier  client.html se trouvant dans le dossier client. Celui-ci doit renseigner son nom, prénom et l'adresse du serveur. Celui-ci est indiqué en haut de la page web du serveur. 
 Une fois tous les champs renseignés, il suffit d'attendre que le serveur diffuse la musique.
 
+
+L'utilisation de ce logiciel nécessite d'avoir sur son ordinateur node.js d'installé : http://nodejs.org/
