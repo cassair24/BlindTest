@@ -1,6 +1,6 @@
 BlindTest
 =========
-Ce jeu permet de jouer au blind test avec plusieurs personnes se trouvant sur le même réseau. 
+Ce jeu permet de jouer au blind test avec plusieurs personnes se trouvant sur un même réseau local. 
 Il est composé en deux parties:
   - Le serveur : la personne gérant le serveur est celui qui va diffuser la musique aux joueurs.
   - Le(s) client(s) : ce sont les joueurs qui vont devoir deviner les musiques.
@@ -9,7 +9,7 @@ Le Serveur
 =========
 
 Pour commencer à jouer, le serveur doit exécuter le fichier "exe" se trouvant dans le dossier serveur. 
-Une page web va s'afficher. La page est composée de deux boutons, indiquant les deux modes de jeu possible :
+Une page web va s'afficher. Elle est composée de deux boutons, indiquant les deux modes de jeu possible :
   - Le mode Drop : la personne gérant le serveur doit déposer un fichier mp3 dans le cadre.
   - Le mode Dossier : la personne gérant le serveur doit indiquer le chemin d'un dossier contenant de la musique. 
 
